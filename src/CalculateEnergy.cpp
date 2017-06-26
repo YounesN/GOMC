@@ -849,7 +849,7 @@ double CalculateEnergy::IntraEnergy_1_4(const double distSq, const uint atom1,
 
 }
 
-//!Calculates energy and virial tail corrections for the box
+//!Calculates energy tail corrections for the box
 void CalculateEnergy::EnergyCorrection(SystemPotential& pot,
 				       BoxDimensions const& boxAxes,
 				       const uint box) const
@@ -872,6 +872,24 @@ void CalculateEnergy::EnergyCorrection(SystemPotential& pot,
   }
 }
 
+//!Calculates energy corrections for the box
+double CalculateEnergy::EnergyCorrection(const BoxDimensions& boxAxes,
+					 const uint box,
+					 const uint *kCount) const
+{
+   double tc = 0.0;
+   for (uint i = 0; i < mols.kindsCount; ++i)
+   {
+      for (uint j = 0; j < mols.kindsCount; ++j)
+      {
+	 tc.energy += mols.pairEnCorrections[i * mols.kindsCount + j] * 
+	   kCount[i] * kCount[j] * boxAxes.volInv[box];
+      }
+   }
+   return tc;
+}
+
+//!Calculates force tail corrections for the box
 void CalculateEnergy::ForceCorrection(Virial& virial,
 				      BoxDimensions const& boxAxes,
 				      const uint box) const

@@ -302,6 +302,67 @@ public:
     return rejectState;
   }
 
+   // used in Identity Exchange move
+  uint PickMol(uint &m, uint &m2, uint & mk, uint &mk2, const uint b,
+		const uint dest, const double subDraw, const double subPerc)
+  {
+    uint rejectState = mv::fail_state::NO_FAIL;
+    uint mkTot = molLookRef.GetNumKind();
+    
+    if(mkTot < 2)
+    {
+      std::cout << "Error: ID_Exchange move is not possible for pure system.\n";
+      exit(EXIT_FAILURE);
+    }
+
+    double molDiv = subPerc/mkTot;
+    //Which molecule kind chunk are we in?
+    mk = (uint)(subDraw/molDiv);
+    
+    //clamp if some rand err.
+    if (mk == mkTot)
+      mk = mkTot -1;
+    
+    //find the other ID pair
+    mk2 = mk;
+    while(mk2 == mk)
+    {
+      mk2 = randIntExc(mkTot);
+    }
+
+    //Pick molecule with the help of molecule lookup table.
+    if ((molLookRef.NumKindInBox(mk, b) == 0) || 
+	molLookRef.NumKindInBox(mk, b) == (molLookRef.GetNoSwapInBox(mk, b) +
+					   molLookRef.GetFixInBox(mk, b)))
+    {
+      rejectState = mv::fail_state::NO_MOL_OF_KIND_IN_BOX;
+    }
+    else if ((molLookRef.NumKindInBox(mk2, dest) == 0) || 
+	     molLookRef.NumKindInBox(mk2, dest) ==
+	     (molLookRef.GetNoSwapInBox(mk, b) +
+	      molLookRef.GetFixInBox(mk2, dest)))
+    {
+      rejectState = mv::fail_state::NO_MOL_OF_KIND_IN_BOX;
+    }
+    else if (molLookRef.NumKindInBox(mk, b) == 0 || 
+	molLookRef.NumKindInBox(mk2, dest) == 0)
+    {
+      rejectState = mv::fail_state::NO_TWO_MOLECULE_KIND;
+    }
+    else
+    {
+      //Among the ones of that kind in that source box, pick one @ random.
+      uint mOff = randIntExc(molLookRef.NumKindInBox(mk, b));
+      //Lookup true index in table.
+      m = molLookRef.GetMolNum(mOff, mk, b);
+      //Among the ones of that kind in that dest box, pick one @ random.
+      uint mOff2 = randIntExc(molLookRef.NumKindInBox(mk2, dest));
+      //Lookup true index in table.
+      m2 = molLookRef.GetMolNum(mOff2, mk2, dest);
+    }
+    return rejectState;
+  }
+
   // pick a molecule that is not fixed (beta != 1)
   uint PickMolAndBoxPair(uint &m, uint &mk, uint & bSrc, uint & bDest,
                          double subDraw, const double movPerc)
@@ -318,6 +379,15 @@ public:
     double boxDiv=0;
     PickBoxPair(bSrc, bDest, boxDiv, subDraw, movPerc);
     return PickMol2(m, mk, bSrc, subDraw, boxDiv);
+  }
+
+  // used in Identity Exchange move
+  uint PickMolAndBoxPair(uint &m, uint &m2, uint &mk, uint &mk2, uint &bSrc,
+			 uint &bDest, double subDraw, const double movPerc)
+  {
+    double boxDiv=0;
+    PickBoxPair(bSrc, bDest, boxDiv, subDraw, movPerc);
+    return PickMol(m, m2, mk, mk2, bSrc, bDest, subDraw, boxDiv);
   }
 
   uint PickMolAndBox(uint & m, uint &mk, uint &b,

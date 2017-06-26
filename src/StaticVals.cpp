@@ -49,7 +49,9 @@ void StaticVals::InitMovePercents(config_setup::MovePercents const& perc)
 #ifdef VARIABLE_PARTICLE_NUMBER
 #if ENSEMBLE == GEMC || ENSEMBLE == GCMC
       case mv::MOL_TRANSFER :
-	 movePerc[m] = perc.transfer; break;
+	 movePerc[m] = perc.transfer; break;	 
+      case mv::ID_EXCHANGE :
+	movePerc[m] = perc.idExchange; break; 
 #endif
 #endif
       default:

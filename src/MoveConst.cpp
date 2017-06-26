@@ -1,5 +1,5 @@
 #include "MoveConst.h" //Spec file.
-
+/*
 std::vector<std::string> mv::MoveNames()
 {
   std::vector<std::string> v;
@@ -10,9 +10,10 @@ std::vector<std::string> mv::MoveNames()
 #elif ENSEMBLE == GCMC
   v.push_back("Displace (Box 0)");
   v.push_back("Rotate (Box 0)");
+  v.push_back("IntraSwap (Box 0)");
+  v.push_back("IDSwap (Box 0)");
   v.push_back("Deletion (from Box 0)");
   v.push_back("Insertion (into Box 0)");
-  v.push_back("IntraSwap (Box 0)");
 #elif ENSEMBLE == GEMC
   v.push_back("Displace (Box 0)");
   v.push_back("Displace (Box 1)");
@@ -24,6 +25,7 @@ std::vector<std::string> mv::MoveNames()
   v.push_back("Molecule Transfer (Box 1 -> Box 0)");
   v.push_back("IntraSwap (Box 0)");
   v.push_back("IntraSwap (Box 1)");
+  v.push_back("IDSwap (Box 0)");
 #elif ENSEMBLE == NPT
   v.push_back("Displace (Box 0)");
   v.push_back("Rotate (Box 0)");
@@ -47,3 +49,4 @@ std::vector<std::string> mv::ScaleMoveNames()
 #endif
   return v;
 }
+*/

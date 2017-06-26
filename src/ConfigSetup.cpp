@@ -100,6 +100,7 @@ ConfigSetup::ConfigSetup(void)
   out.statistics.vars.surfaceTension.fluct = false;
 #ifdef VARIABLE_PARTICLE_NUMBER
   sys.moves.transfer = DBL_MAX;
+  sys.moves.idExchange = DBL_MAX;
   sys.cbmcTrials.bonded.ang = UINT_MAX;
   sys.cbmcTrials.bonded.dih = UINT_MAX;
   sys.cbmcTrials.nonbonded.first = UINT_MAX;
@@ -407,6 +408,10 @@ void ConfigSetup::Init(const char *fileName)
       sys.moves.transfer = stringtod(line[1]);
 #endif
     }
+    else if(line[0] == "IDSwitchFreq")
+    {
+      sys.moves.idExchange = stringtod(line[1]);
+    }
 #endif
     else if(line[0] == "BoxDim")
     {
@@ -579,6 +584,20 @@ void ConfigSetup::fillDefaults(void)
     sys.moves.intraSwap = 0.000;
   }
 
+#ifdef VARIABLE_PARTICLE_NUMBER
+  if(sys.moves.idExchange == DBL_MAX)
+  {
+    std::cout << "By default Identity Exchange frequency has been set to zero" << std::endl;
+    sys.moves.idExchange = 0.0;
+  }
+#endif
+
+  if(sys.ff.cutoffLow == DBL_MAX)
+  {
+    std::cout << "Warning: Cut off Low is set to 1 A!" << std::endl;
+    sys.ff.cutoffLow = 1.00;
+  }
+
   if(sys.exclude.EXCLUDE_KIND == UINT_MAX)
   {
     std::cout << "Warning: By default value (1-3) for exclude is selected!" << std::endl;
@@ -741,11 +760,6 @@ void ConfigSetup::verifyInputs(void)
     std::cout << "Error: Cut off is required!" << std::endl;
     exit(0);
   }
-  if(sys.ff.cutoffLow == DBL_MAX)
-  {
-    std::cout << "Warning: Cut off Low is set to 1 A!" << std::endl;
-    sys.ff.cutoffLow = 1.00;
-  }
   if(sys.elect.ewald && (sys.elect.tolerance == DBL_MAX))
   {
     std::cout << "Error: Tolerance has not been specified for Ewald summation method!" << std::endl;
@@ -809,7 +823,7 @@ void ConfigSetup::verifyInputs(void)
     std::cout << "Error: Molecule swap frequency has not been specified!" << std::endl;
     exit(0);
   }
-  if(abs(sys.moves.displace + sys.moves.rotate + sys.moves.transfer + sys.moves.intraSwap + sys.moves.volume - 1.0) > 0.01)
+  if(abs(sys.moves.displace + sys.moves.rotate + sys.moves.transfer + sys.moves.idExchange + sys.moves.intraSwap + sys.moves.volume - 1.0) > 0.01)
   {
     std::cout << "Error: Sum of move frequncies are not equal to one!" << std::endl;
     exit(0);
@@ -832,7 +846,7 @@ void ConfigSetup::verifyInputs(void)
     std::cout << "Error: Molecule swap frequency has not been specified!" << std::endl;
     exit(0);
   }
-  if(abs(sys.moves.displace + sys.moves.rotate + sys.moves.intraSwap + sys.moves.transfer - 1.0) > 0.01)
+  if(abs(sys.moves.displace + sys.moves.rotate + sys.moves.idExchange + sys.moves.intraSwap + sys.moves.transfer - 1.0) > 0.01)
   {
     std::cout << "Error: Sum of move frequncies are not equal to one!" << std::endl;
     exit(0);

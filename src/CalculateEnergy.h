@@ -152,11 +152,16 @@ public:
   double IntraEnergy_1_4(const double distSq, const uint atom1,
                          const uint atom2, const uint molIndex) const;
 
+  //!Calculates energy corrections for the box
+  double EnergyCorrection(const BoxDimensions& boxAxes,
+			  const uint box, const uint *kCount) const
+
 private:
 
   //! Calculates full TC energy for one box in current system
   void EnergyCorrection(SystemPotential& pot, BoxDimensions const& boxAxes,
 			const uint box) const;
+
 
   //! Calculates full TC virial for one box in current system
   void ForceCorrection(Virial& virial, BoxDimensions const& boxAxes,

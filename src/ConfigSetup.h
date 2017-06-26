@@ -146,7 +146,7 @@ namespace config_setup
       double volume; 
 #endif 
 #ifdef VARIABLE_PARTICLE_NUMBER 
-      double transfer; 
+     double transfer, idExchange; 
 #endif 
    }; 
  

@@ -81,6 +81,7 @@ set(headers
    FxdWidthWrtr.h
    Geometry.h
    HistOutput.h
+   IdentityExchange.h
    InputAbstracts.h
    InputFileReader.h
    IntraSwap.h

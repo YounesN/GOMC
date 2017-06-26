@@ -14,6 +14,7 @@
 #include "MoveBase.h"            //For move bases....
 #include "MoleculeTransfer.h"
 #include "IntraSwap.h"
+#include "IdentityExchange.h"
 
 System::System(StaticVals& statics) : 
    statV(statics),
@@ -43,6 +44,7 @@ System::~System()
 #endif
 #if ENSEMBLE == GEMC || ENSEMBLE == GCMC
    delete moves[mv::MOL_TRANSFER];
+   delete moves[mv::ID_EXCHANGE];
 #endif
 }
 
@@ -94,6 +96,7 @@ void System::InitMoves()
 #endif
 #if ENSEMBLE == GEMC || ENSEMBLE == GCMC
    moves[mv::MOL_TRANSFER] = new MoleculeTransfer(*this, statV);
+   moves[mv::ID_EXCHANGE] = new IdentityExchange(*this, statV);
 #endif
 }
 

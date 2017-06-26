@@ -19,7 +19,7 @@ void MoveSettings::Init(StaticVals const& statV)
       {
 	 tempTries[m] = 0;
 	 tempAccepted[m] = 0;
-	 mv::GetMoveMajIndex(maj, subDiv, m);	 
+	 //mv::GetMoveMajIndex(maj, subDiv, m);	 
       }
       acceptPercent[m] = 0.0;
       accepted[m] = tries[m] = 0;
