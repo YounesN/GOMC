@@ -71,7 +71,6 @@ inline uint IntraSwap::Prep(const double subDraw, const double movPerc)
 inline uint IntraSwap::Transform()
 {
    cellList.RemoveMol(molIndex, sourceBox, coordCurrRef);
-   subPick = mv::GetMoveSubIndex(mv::INTRA_SWAP, sourceBox);
    molRef.kinds[kindIndex].Build(oldMol, newMol, molIndex);
    return mv::fail_state::NO_FAIL;
 }

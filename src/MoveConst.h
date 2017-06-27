@@ -100,7 +100,7 @@ const uint IT_KINDS_TOTAL=2;
 //GEMC: 1. Disp (box 0) 2. Disp (box 1) 3. Rotate (box 0) 4. Rotate (box 1)
 //      5. Vol. (b0->b1) 6. Vol. (b1->b0) 7. Mol Trans (b0->b1), lin.
 //      8. Mol Trans (b1->b0), lin. 9. IntraSwap (box 0)
-//     10. IntraSwap (box 1)       11. ID Exchange
+//     10. IntraSwap (box 1)       11. ID Exchange  12. ID Exchange
 //NPT : 1. Disp (box 0) 2. Rotate (box 0) 3. IntraSwap (box 0) 4. Vol. (box 0)
 
 #if ENSEMBLE == NVT
@@ -110,7 +110,7 @@ const uint SCALEABLE = 2;
 const uint COUNT = 6;
 const uint SCALEABLE = 2;
 #elif ENSEMBLE == GEMC
-const uint COUNT = 11;
+const uint COUNT = 12;
 const uint SCALEABLE = 6;
 #elif ENSEMBLE == NPT
 const uint COUNT = 4;

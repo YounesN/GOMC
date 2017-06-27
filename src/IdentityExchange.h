@@ -91,7 +91,6 @@ inline uint IdentityExchange::Transform()
    cellList.RemoveMol(molIndexA, sourceBox, coordCurrRef);
    cellList.RemoveMol(molIndexB, destBox, coordCurrRef);
 
-   subPick = mv::GetMoveSubIndex(mv::ID_EXCHANGE);
    //Transfer Type A to dest Box
    molRef.kinds[kindIndexA].Build(oldMolA, newMolA, molIndexA);
    //Transfer Type B to source Box
@@ -286,8 +285,11 @@ inline void IdentityExchange::Accept(const uint rejectState, const uint step)
    }
    else  //else we didn't even try because we knew it would fail
       result = false;
-
+#if ENSEMBLE == GEMC
+   subPick = mv::GetMoveSubIndex(mv::ID_EXCHANGE, sourceBox);
+#elif ENSEMBLE == GCMC
    subPick = mv::GetMoveSubIndex(mv::ID_EXCHANGE);
+#endif
    moveSetRef.Update(result, subPick, step);
 }
 

@@ -67,7 +67,6 @@ inline uint MoleculeTransfer::Prep(const double subDraw, const double movPerc)
 inline uint MoleculeTransfer::Transform()
 {
    cellList.RemoveMol(molIndex, sourceBox, coordCurrRef);
-   subPick = mv::GetMoveSubIndex(mv::MOL_TRANSFER, sourceBox);
    molRef.kinds[kindIndex].Build(oldMol, newMol, molIndex);
    return mv::fail_state::NO_FAIL;
 }

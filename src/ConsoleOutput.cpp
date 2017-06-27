@@ -114,7 +114,6 @@ void ConsoleOutput::PrintMove(const uint box, const ulong step) const
     printElement(var->GetTries(sub), elementWidth);
     printElement(var->GetAccepted(sub), elementWidth);
     printElement(var->GetAcceptPercent(sub), elementWidth);
-    //printElement(var->GetScale(sub), elementWidth);
 #if ENSEMBLE == GCMC
   }
 #endif
@@ -124,7 +123,11 @@ void ConsoleOutput::PrintMove(const uint box, const ulong step) const
   printElement(var->GetTries(sub), elementWidth);
   printElement(var->GetAccepted(sub), elementWidth);
   printElement(var->GetAcceptPercent(sub), elementWidth);
-  //printElement(var->GetScale(sub), elementWidth);
+
+  sub = mv::GetMoveSubIndex(mv::ID_EXCHANGE, box);
+  printElement(var->GetTries(sub), elementWidth);
+  printElement(var->GetAccepted(sub), elementWidth);
+  printElement(var->GetAcceptPercent(sub), elementWidth);
 #endif
 
 #if ENSEMBLE == GEMC || ENSEMBLE == NPT
@@ -299,6 +302,10 @@ void ConsoleOutput::PrintMoveTitle()
   printElement("TRANSFER", elementWidth);
   printElement("TRANACCEPT", elementWidth);
   printElement("TRANACCEPT%", elementWidth);
+
+  printElement("IDSWITCH", elementWidth);
+  printElement("IDSACCEPT", elementWidth);
+  printElement("IDSACCEPT%", elementWidth);
 #endif
 
 #if ENSEMBLE == GEMC || ENSEMBLE == NPT
