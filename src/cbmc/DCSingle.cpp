@@ -53,10 +53,10 @@ namespace cbmc
  
       prng.FillWithRandom(positions, nLJTrials, 
 			  data->axes.GetAxis(newMol.GetBox())); 
-      if(newMol.seedToGrow)
+      if(newMol.HasSeed())
       {
 	//set the first atom in position of the other picked molecule.
-	positions.Set(0, newMol.sCoords);
+	positions.Set(0, newMol.GetSeed());
       }
       data->calc.ParticleInter(inter, real, positions, atom, molIndex, 
                                newMol.GetBox(), nLJTrials);
@@ -68,14 +68,16 @@ namespace cbmc
 			       (inter[trial] + real[trial])); 
          stepWeight += ljWeights[trial]; 
       } 
-      if(newMol.seedToGrow)
+
+      uint winner;
+      if(newMol.HasSeed())
       {
 	//In IDExchange move we pick the winner.
-	uint winner = 0;
+	winner = 0;
       }
       else
       {
-	uint winner = prng.PickWeighted(ljWeights, nLJTrials, stepWeight); 
+	winner = prng.PickWeighted(ljWeights, nLJTrials, stepWeight); 
       }
       newMol.MultWeight(stepWeight); 
       newMol.AddEnergy(Energy(0.0, 0.0, inter[winner], real[winner], 

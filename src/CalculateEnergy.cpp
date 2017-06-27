@@ -882,7 +882,7 @@ double CalculateEnergy::EnergyCorrection(const BoxDimensions& boxAxes,
    {
       for (uint j = 0; j < mols.kindsCount; ++j)
       {
-	 tc.energy += mols.pairEnCorrections[i * mols.kindsCount + j] * 
+	 tc += mols.pairEnCorrections[i * mols.kindsCount + j] * 
 	   kCount[i] * kCount[j] * boxAxes.volInv[box];
       }
    }

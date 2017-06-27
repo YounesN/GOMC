@@ -93,9 +93,9 @@ inline uint IdentityExchange::Transform()
 
    subPick = mv::GetMoveSubIndex(mv::ID_EXCHANGE);
    //Transfer Type A to dest Box
-   molRef.kinds[kindIndex].Build(oldMolA, newMolA, molIndex);
+   molRef.kinds[kindIndexA].Build(oldMolA, newMolA, molIndexA);
    //Transfer Type B to source Box
-   molRef.kinds[otherKindIndex].Build(oldMolB, newMolB, otherMolIndex);
+   molRef.kinds[kindIndexB].Build(oldMolB, newMolB, molIndexB);
 
    return mv::fail_state::NO_FAIL;
 }
@@ -156,8 +156,8 @@ inline void IdentityExchange::CalcEn()
       recipLoseB.energy =
 	calcEwald->SwapSourceRecip(oldMolB, destBox, molIndexB);
       //need to contribute the self and correction energy 
-      W_recip = exp(-1.0 * ffRef.beta * (recipGain.energyA + recipLose.energyA +
-					 recipGain.energyB + recipLose.energyB +
+      W_recip = exp(-1.0 * ffRef.beta * (recipGainA.energy + recipLoseA.energy +
+					 recipGainB.energy + recipLoseB.energy +
 					 correct_newA - correct_oldA +
 					 correct_newB - correct_oldB +
 					 self_newA - self_oldA +
@@ -237,7 +237,7 @@ inline void IdentityExchange::Accept(const uint rejectState, const uint step)
          sysPotRef.boxEnergy[destBox] -= oldMolB.GetEnergy();
 	 //Add Reciprocal energy
 	 sysPotRef.boxEnergy[sourceBox].recip += recipLoseA.energy;
-	 sysPotRef.boxEnergy[sourcetBox].recip += recipGainB.energy;
+	 sysPotRef.boxEnergy[sourceBox].recip += recipGainB.energy;
 	 sysPotRef.boxEnergy[destBox].recip += recipGainA.energy;
 	 sysPotRef.boxEnergy[destBox].recip += recipLoseB.energy;	 
 	 //Add correction energy

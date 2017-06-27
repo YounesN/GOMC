@@ -118,7 +118,10 @@ class TrialMol
       uint FindSeedNum() const;
 
       //!Copies 1 atom's worth of coordinates to sCoords
-      void SetSeed(const XYZA& coords);
+      void SetSeed(const XYZ& coords);
+
+      bool HasSeed() const {return seedToGrow;}
+      XYZ GetSeed() const {return sCoords;}
 
       ~TrialMol();
 

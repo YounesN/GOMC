@@ -133,6 +133,7 @@ const uint ROTATE_ON_SINGLE_ATOM = 2;
 const uint NO_MOL_OF_KIND_IN_BOX = 3;
 const uint INNER_CUTOFF_NEW_TRIAL_POS=4;
 const uint VOL_TRANS_WOULD_SHRINK_BOX_BELOW_CUTOFF=5;
+const uint NO_TWO_MOLECULE_KIND = 6;
 }
 
 //It has never been called!

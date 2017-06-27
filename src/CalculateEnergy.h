@@ -154,7 +154,7 @@ public:
 
   //!Calculates energy corrections for the box
   double EnergyCorrection(const BoxDimensions& boxAxes,
-			  const uint box, const uint *kCount) const
+			  const uint box, const uint *kCount) const;
 
 private:
 

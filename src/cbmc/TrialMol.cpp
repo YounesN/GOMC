@@ -218,7 +218,7 @@ uint TrialMol::FindSeedNum() const
    return toGrow;
 }
 
-double TrialMol::void SetSeed(const XYZA& coords)
+void TrialMol::SetSeed(const XYZ& coords)
 {
   sCoords = coords;
   seedToGrow = true;
