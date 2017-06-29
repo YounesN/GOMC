@@ -873,17 +873,21 @@ void CalculateEnergy::EnergyCorrection(SystemPotential& pot,
 }
 
 //!Calculates energy corrections for the box
-double CalculateEnergy::EnergyCorrection(const BoxDimensions& boxAxes,
-					 const uint box,
+double CalculateEnergy::EnergyCorrection(const uint box,
 					 const uint *kCount) const
 {
+   if (box >= BOXES_WITH_U_NB)
+   {
+     return 0.0;
+   }
+
    double tc = 0.0;
    for (uint i = 0; i < mols.kindsCount; ++i)
    {
       for (uint j = 0; j < mols.kindsCount; ++j)
       {
 	 tc += mols.pairEnCorrections[i * mols.kindsCount + j] * 
-	   kCount[i] * kCount[j] * boxAxes.volInv[box];
+	   kCount[i] * kCount[j] * currentAxes.volInv[box];
       }
    }
    return tc;

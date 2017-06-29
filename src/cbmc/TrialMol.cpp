@@ -24,11 +24,13 @@ TrialMol::TrialMol(const MoleculeKind& k, const BoxDimensions& ax,
 {
   atomBuilt = new bool[k.NumAtoms()];
   std::fill_n(atomBuilt, k.NumAtoms(), false);
+  seedToGrow = false;
   growthToWorld.LoadIdentity();
 }
 
 TrialMol::TrialMol()
-  : kind(NULL), axes(NULL), box(0), tCoords(0), atomBuilt(NULL)
+  : kind(NULL), axes(NULL), box(0), tCoords(0), atomBuilt(NULL),
+    seedToGrow(false)
 {
 }
 
@@ -222,6 +224,11 @@ void TrialMol::SetSeed(const XYZ& coords)
 {
   sCoords = coords;
   seedToGrow = true;
+}
+
+void TrialMol::HasSeed(const bool seed)
+{
+  seedToGrow = seed;
 }
 
 double TrialMol::AngleDist(const double b1, const double b2, const double theta)

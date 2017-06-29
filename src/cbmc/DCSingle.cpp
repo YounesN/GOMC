@@ -17,7 +17,11 @@ namespace cbmc
       double* inter = data->inter; 
       double* real = data->real; 
       double stepWeight = 0; 
-       
+      if(oldMol.HasSeed())
+      {
+	nLJTrials = 1;
+      }
+
       std::fill_n(inter, nLJTrials, 0.0);  
       std::fill_n(real, nLJTrials, 0.0); 
  
@@ -46,6 +50,10 @@ namespace cbmc
       double* inter = data->inter; 
       double* real = data->real; 
       double* ljWeights = data->ljWeights; 
+      if(newMol.HasSeed())
+      {
+	nLJTrials = 1;
+      }
  
       std::fill_n(inter, nLJTrials, 0.0);  
       std::fill_n(real, nLJTrials, 0.0); 
@@ -69,16 +77,7 @@ namespace cbmc
          stepWeight += ljWeights[trial]; 
       } 
 
-      uint winner;
-      if(newMol.HasSeed())
-      {
-	//In IDExchange move we pick the winner.
-	winner = 0;
-      }
-      else
-      {
-	winner = prng.PickWeighted(ljWeights, nLJTrials, stepWeight); 
-      }
+      uint winner = prng.PickWeighted(ljWeights, nLJTrials, stepWeight); 
       newMol.MultWeight(stepWeight); 
       newMol.AddEnergy(Energy(0.0, 0.0, inter[winner], real[winner], 
 			      0.0, 0.0, 0.0)); 

@@ -153,8 +153,7 @@ public:
                          const uint atom2, const uint molIndex) const;
 
   //!Calculates energy corrections for the box
-  double EnergyCorrection(const BoxDimensions& boxAxes,
-			  const uint box, const uint *kCount) const;
+  double EnergyCorrection(const uint box, const uint *kCount) const;
 
 private:
 

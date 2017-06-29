@@ -323,11 +323,21 @@ public:
     if (mk == mkTot)
       mk = mkTot -1;
     
-    //find the other ID pair
-    mk2 = mk;
-    while(mk2 == mk)
+    if(mkTot == 2)
     {
-      mk2 = randIntExc(mkTot);
+      if(mk == 0)
+	mk2 = 1;
+      else
+	mk2 = 0;
+    }
+    else
+    {
+      //find the other ID pair
+      mk2 = mk;
+      while(mk2 == mk)
+      {
+	mk2 = randIntExc(mkTot);
+      }
     }
 
     //Pick molecule with the help of molecule lookup table.

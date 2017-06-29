@@ -80,6 +80,8 @@ inline uint IdentityExchange::Prep(const double subDraw, const double movPerc)
    //copy the seed coordinate and set cbmc for IDExchange move
    newMolA.SetSeed(oldMolB.AtomPosition(oldMolB.FindSeedNum()));
    newMolB.SetSeed(oldMolA.AtomPosition(oldMolA.FindSeedNum()));
+   oldMolA.HasSeed(true);
+   oldMolB.HasSeed(true);
    W_tc = 1.0;
    return state;
 }
@@ -127,10 +129,10 @@ inline void IdentityExchange::CalcEn()
 	   ++kCount[kindIndexA];
 	   --kCount[kindIndexB];
 	 }
-	 tcNew[b].energy = calcEnRef.EnergyCorrection(boxDimRef, b, kCount);
-	 delTC = tcNew[b].energy - sysPotRef.boxEnergy[b].tc;
-	 W_tc *= exp(-1.0 * ffRef.beta * delTC);
+	 tcNew[b].energy = calcEnRef.EnergyCorrection(b, kCount);
+	 delTC += tcNew[b].energy - sysPotRef.boxEnergy[b].tc;
       }
+     W_tc = exp(-1.0 * ffRef.beta * delTC); 
    }
 
    if (newMolA.GetWeight() != 0.0 && newMolB.GetWeight() != 0.0)
@@ -175,34 +177,42 @@ inline double IdentityExchange::GetCoeff() const
   return (double)(numTypeBDest) * (double)(numTypeASource)/
     ((double)(numTypeBSource + 1.0) * (double)(numTypeADest + 1.0));
 #elif ENSEMBLE == GCMC
-  if (sourceBox == mv::BOX0) //Delete case
+  if (sourceBox == mv::BOX0) //Removing A from Box 0
   {
     if(ffRef.isFugacity)
     {
-      return (double)(numTypeASource / (numTypeBSource + 1.0)) * 
-	(ffRef.beta * (molRef.kinds[kindIndexB].chemPot / 
-		       molRef.kinds[kindIndexA].chemPot));
+      double delA = (double)(numTypeASource) * boxDimRef.volInv[sourceBox] /
+	(BETA * molRef.kinds[kindIndexA].chemPot);
+      double instB = boxDimRef.volume[sourceBox]/ (double)(numTypeBSource + 1) *
+	(BETA * molRef.kinds[kindIndexB].chemPot);
+      return delA * instB;
     }
     else
     {
-      return (double)(numTypeASource / (numTypeBSource + 1.0)) * 
-	exp(ffRef.beta * ( molRef.kinds[kindIndexB].chemPot - 
-			   molRef.kinds[kindIndexA].chemPot));
+      double delA = (double)(numTypeASource) * boxDimRef.volInv[sourceBox] *
+	exp(-BETA * molRef.kinds[kindIndexA].chemPot);
+      double instB = boxDimRef.volume[sourceBox]/ (double)(numTypeBSource + 1) *
+	exp(BETA * molRef.kinds[kindIndexB].chemPot);
+      return delA * instB;
     }
   }
-  else //Insertion case
+  else //Insert A to Box 0
   {
     if(ffRef.isFugacity)
     {
-      return (double)(numTypeBSource / (numTypeASource + 1.0)) * 
-	exp(ffRef.beta * ( molRef.kinds[kindIndexA].chemPot - 
-			   molRef.kinds[kindIndexB].chemPot));
+      double instA = boxDimRef.volume[destBox] / (double)(numTypeADest + 1) *
+	(BETA * molRef.kinds[kindIndexA].chemPot);
+      double delB = (double)(numTypeBDest) * boxDimRef.volInv[destBox] /
+	(BETA * molRef.kinds[kindIndexB].chemPot);
+      return instA * delB;
     }
     else
     {
-      return (double)(numTypeBSource / (numTypeASource + 1.0)) * 
-	(ffRef.beta * (molRef.kinds[kindIndexA].chemPot / 
-		       molRef.kinds[kindIndexB].chemPot));
+      double instA = boxDimRef.volume[destBox] / (double)(numTypeADest + 1) *
+	exp(BETA * molRef.kinds[kindIndexA].chemPot);
+      double delB = (double)(numTypeBDest) * boxDimRef.volInv[destBox] *
+	exp(-BETA * molRef.kinds[kindIndexB].chemPot);
+      return instA * delB;
     }
   }
 #endif

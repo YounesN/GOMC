@@ -119,6 +119,8 @@ class TrialMol
 
       //!Copies 1 atom's worth of coordinates to sCoords
       void SetSeed(const XYZ& coords);
+      //Set the HasSeed to true
+      void HasSeed(const bool seed);
 
       bool HasSeed() const {return seedToGrow;}
       XYZ GetSeed() const {return sCoords;}
