@@ -341,21 +341,19 @@ public:
     }
 
     //Pick molecule with the help of molecule lookup table.
-    if ((molLookRef.NumKindInBox(mk, b) == 0) || 
-	molLookRef.NumKindInBox(mk, b) == (molLookRef.GetNoSwapInBox(mk, b) +
+    if (molLookRef.NumKindInBox(mk, b) == (molLookRef.GetNoSwapInBox(mk, b) +
 					   molLookRef.GetFixInBox(mk, b)))
     {
       rejectState = mv::fail_state::NO_MOL_OF_KIND_IN_BOX;
     }
-    else if ((molLookRef.NumKindInBox(mk2, dest) == 0) || 
-	     molLookRef.NumKindInBox(mk2, dest) ==
-	     (molLookRef.GetNoSwapInBox(mk, b) +
+    else if (molLookRef.NumKindInBox(mk2, dest) ==
+	     (molLookRef.GetNoSwapInBox(mk2, dest) +
 	      molLookRef.GetFixInBox(mk2, dest)))
     {
       rejectState = mv::fail_state::NO_MOL_OF_KIND_IN_BOX;
     }
     else if (molLookRef.NumKindInBox(mk, b) == 0 || 
-	molLookRef.NumKindInBox(mk2, dest) == 0)
+	     molLookRef.NumKindInBox(mk2, dest) == 0)
     {
       rejectState = mv::fail_state::NO_TWO_MOLECULE_KIND;
     }
