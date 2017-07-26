@@ -200,35 +200,11 @@ void TrialMol::SetCoords(const XYZArray& coords, uint start)
   coords.CopyRange(tCoords, start, 0, tCoords.Count());
 }
 
-uint TrialMol::FindSeedNum() const
-{
-   uint toGrow = 0;
-   std::vector<uint> bondCount(kind->NumAtoms(), 0);
-   for (uint i = 0; i < kind->bondList.count; ++i)
-   {
-     bondCount[kind->bondList.part1[i]]++;
-     bondCount[kind->bondList.part2[i]]++;
-   }
-   for (uint i = 0; i < kind->NumAtoms(); ++i)
-   {
-     if (bondCount[i] > 2)
-     {
-       toGrow = i;
-       break;
-     }
-   }
-   return toGrow;
-}
-
-void TrialMol::SetSeed(const XYZ& coords)
+void TrialMol::SetSeed(const XYZ& coords, const double rmax)
 {
   sCoords = coords;
+  sRmax = rmax;
   seedToGrow = true;
-}
-
-void TrialMol::HasSeed(const bool seed)
-{
-  seedToGrow = seed;
 }
 
 double TrialMol::AngleDist(const double b1, const double b2, const double theta)

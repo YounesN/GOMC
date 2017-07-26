@@ -15,8 +15,8 @@ void ConsoleOutput::DoOutput(const ulong step)
 {
   if (step == 0)
   {
-    std::cout << std::endl<< "###############################################################################" << std::endl;
-    std::cout << "########################## INITIAL SIMULATION ENERGY ##########################" << std::endl << std::endl;
+    std::cout << std::endl<< "################################################################################" << std::endl;
+    std::cout << "########################## INITIAL SIMULATION ENERGY ###########################" << std::endl << std::endl;
 
     PrintEnergyTitle();
     std::cout << std::endl;
@@ -38,9 +38,9 @@ void ConsoleOutput::DoOutput(const ulong step)
       std::cout << std::endl;
     }
     
-    std::cout << "###############################################################################" << std::endl;
+    std::cout << "################################################################################" << std::endl;
 
-    std::cout << "############################# STARTING SIMULATION #############################" << std::endl << std::endl;
+    std::cout << "############################# STARTING SIMULATION ##############################" << std::endl << std::endl;
 
     PrintMoveTitle();
     std::cout << std::endl;
@@ -114,6 +114,7 @@ void ConsoleOutput::PrintMove(const uint box, const ulong step) const
     printElement(var->GetTries(sub), elementWidth);
     printElement(var->GetAccepted(sub), elementWidth);
     printElement(var->GetAcceptPercent(sub), elementWidth);
+    //printElement(var->GetScale(sub), elementWidth);
 #if ENSEMBLE == GCMC
   }
 #endif

@@ -17,17 +17,23 @@ namespace cbmc
       double* inter = data->inter; 
       double* real = data->real; 
       double stepWeight = 0; 
-      if(oldMol.HasSeed())
-      {
-	nLJTrials = 1;
-      }
 
       std::fill_n(inter, nLJTrials, 0.0);  
       std::fill_n(real, nLJTrials, 0.0); 
  
-      prng.FillWithRandom(data->positions, nLJTrials, 
-			  data->axes.GetAxis(oldMol.GetBox())); 
-      positions.Set(0, oldMol.AtomPosition(atom)); 
+      if(oldMol.HasSeed())
+      {
+	prng.FillWithRandomOnSphere(positions, nLJTrials, oldMol.GetRmax(), 
+				    oldMol.GetSeed());
+	positions.Set(0, oldMol.AtomPosition(atom));
+	data->axes.WrapPBC(positions, oldMol.GetBox());
+      }
+      else
+      {
+	prng.FillWithRandom(positions, nLJTrials, 
+			    data->axes.GetAxis(oldMol.GetBox())); 
+	positions.Set(0, oldMol.AtomPosition(atom));
+      }
       data->calc.ParticleInter(inter, real, positions, atom, molIndex, 
                                oldMol.GetBox(), nLJTrials);  
  
@@ -50,22 +56,23 @@ namespace cbmc
       double* inter = data->inter; 
       double* real = data->real; 
       double* ljWeights = data->ljWeights; 
-      if(newMol.HasSeed())
-      {
-	nLJTrials = 1;
-      }
  
       std::fill_n(inter, nLJTrials, 0.0);  
       std::fill_n(real, nLJTrials, 0.0); 
       std::fill_n(ljWeights, nLJTrials, 0.0); 
  
-      prng.FillWithRandom(positions, nLJTrials, 
-			  data->axes.GetAxis(newMol.GetBox())); 
       if(newMol.HasSeed())
       {
-	//set the first atom in position of the other picked molecule.
-	positions.Set(0, newMol.GetSeed());
+	prng.FillWithRandomOnSphere(positions, nLJTrials, newMol.GetRmax(), 
+				    newMol.GetSeed());
+	data->axes.WrapPBC(positions, newMol.GetBox());
       }
+      else
+      {
+	prng.FillWithRandom(positions, nLJTrials, 
+			    data->axes.GetAxis(newMol.GetBox())); 
+      }
+
       data->calc.ParticleInter(inter, real, positions, atom, molIndex, 
                                newMol.GetBox(), nLJTrials);
 

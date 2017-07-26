@@ -114,16 +114,12 @@ class TrialMol
 
       bool AtomExists(uint index) const { return atomBuilt[index]; }
 
-      //Find a branch point to start growing
-      uint FindSeedNum() const;
-
       //!Copies 1 atom's worth of coordinates to sCoords
-      void SetSeed(const XYZ& coords);
-      //Set the HasSeed to true
-      void HasSeed(const bool seed);
+      void SetSeed(const XYZ& coords, const double rmax);
 
       bool HasSeed() const {return seedToGrow;}
       XYZ GetSeed() const {return sCoords;}
+      double GetRmax() const {return sRmax;}
 
       ~TrialMol();
 
@@ -134,9 +130,10 @@ class TrialMol
       const BoxDimensions* axes;
       uint box;
       XYZArray tCoords;
-      XYZ sCoords;
+      XYZ sCoords; //The center of radius
       Energy en;
       double totalWeight;
+      double sRmax;   //The radius of inserting molecule
       bool* atomBuilt;
       bool seedToGrow;
       RotationMatrix growthToWorld;

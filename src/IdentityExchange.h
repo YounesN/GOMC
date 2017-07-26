@@ -8,20 +8,17 @@
 
 // Identity Exchange Move:
 //
-// For linear Molecule it will use first atom position of each molecule type
-//as starting position and continue to grow all atoms.
-// For branch molecule it will use branch atom position of each molecule type
-//as starting position and continue to grow all atoms.
-// Full tail correction will be performed to calculate energy difference.
-// Mohammad Soroush Barhaghi. March_2015
+// insert the molecule A inside the cavity that has the size of the molecule B
+// and vice versa. Only 1 trial must be perform for the first seed.
+// Mohammad Soroush Barhaghi. July 2017
 
 class IdentityExchange : public MoveBase
 {
  public:
 
-	IdentityExchange(System &sys, StaticVals const& statV) :
-      ffRef(statV.forcefield), molLookRef(sys.molLookupRef), 
-      MoveBase(sys, statV) {}
+   IdentityExchange(System &sys, StaticVals const& statV) :
+    ffRef(statV.forcefield), molLookRef(sys.molLookupRef),
+    MoveBase(sys, statV) {}
 
    virtual uint Prep(const double subDraw, const double movPerc);
    virtual uint Transform();
@@ -30,6 +27,7 @@ class IdentityExchange : public MoveBase
 
  private:
 
+   void FindRmax();
    double GetCoeff() const;
    uint GetBoxPairAndMol(const double subDraw, const double movPerc);
    MolPick molPick;
@@ -37,6 +35,7 @@ class IdentityExchange : public MoveBase
    uint pStartA, pStartB, pLenA, pLenB;
    uint molIndexA, molIndexB, kindIndexA, kindIndexB;
 
+   double rmaxA, rmaxB;
    double W_tc, W_recip;
    double correct_oldA, correct_newA, self_oldA, self_newA;
    double correct_oldB, correct_newB, self_oldB, self_newB;
@@ -65,6 +64,12 @@ inline uint IdentityExchange::GetBoxPairAndMol
    return state;
 }
 
+inline void IdentityExchange::FindRmax()
+{
+  rmaxA = 1.0;
+  rmaxB = 1.0;
+}
+
 inline uint IdentityExchange::Prep(const double subDraw, const double movPerc)
 {
    uint state = GetBoxPairAndMol(subDraw, movPerc);
@@ -77,11 +82,14 @@ inline uint IdentityExchange::Prep(const double subDraw, const double movPerc)
    
    oldMolA.SetCoords(coordCurrRef, pStartA);
    oldMolB.SetCoords(coordCurrRef, pStartB);
-   //copy the seed coordinate and set cbmc for IDExchange move
-   newMolA.SetSeed(oldMolB.AtomPosition(oldMolB.FindSeedNum()));
-   newMolB.SetSeed(oldMolA.AtomPosition(oldMolA.FindSeedNum()));
-   oldMolA.HasSeed(true);
-   oldMolB.HasSeed(true);
+   //set center of cavity and radius.
+   FindRmax();
+   //pick the first position around COM of other molecule.
+   newMolA.SetSeed(comCurrRef.Get(molIndexB), rmaxB);
+   newMolB.SetSeed(comCurrRef.Get(molIndexA), rmaxA);
+   //pick the first position around COM of itself.
+   oldMolA.SetSeed(comCurrRef.Get(molIndexA), rmaxB);
+   oldMolB.SetSeed(comCurrRef.Get(molIndexB), rmaxA);
    W_tc = 1.0;
    return state;
 }
@@ -169,30 +177,25 @@ inline void IdentityExchange::CalcEn()
 
 inline double IdentityExchange::GetCoeff() const
 {
-  uint numTypeASource = molLookRef.NumKindInBox(kindIndexA, sourceBox);
-  uint numTypeADest = molLookRef.NumKindInBox(kindIndexA, destBox);
-  uint numTypeBSource = molLookRef.NumKindInBox(kindIndexB, sourceBox);
-  uint numTypeBDest = molLookRef.NumKindInBox(kindIndexB, destBox);
+  double numTypeASource = molLookRef.NumKindInBox(kindIndexA, sourceBox);
+  double numTypeADest = molLookRef.NumKindInBox(kindIndexA, destBox);
+  double numTypeBSource = molLookRef.NumKindInBox(kindIndexB, sourceBox);
+  double numTypeBDest = molLookRef.NumKindInBox(kindIndexB, destBox);
 #if ENSEMBLE == GEMC
-  return (double)(numTypeBDest) * (double)(numTypeASource)/
-    ((double)(numTypeBSource + 1.0) * (double)(numTypeADest + 1.0));
+  return numTypeBDest * numTypeASource /
+    ((numTypeBSource + 1.0) * (numTypeADest + 1.0));
 #elif ENSEMBLE == GCMC
   if (sourceBox == mv::BOX0) //Removing A from Box 0
   {
     if(ffRef.isFugacity)
     {
-      double delA = (double)(numTypeASource) * boxDimRef.volInv[sourceBox] /
-	(BETA * molRef.kinds[kindIndexA].chemPot);
-      double instB = boxDimRef.volume[sourceBox]/ (double)(numTypeBSource + 1) *
-	(BETA * molRef.kinds[kindIndexB].chemPot);
-      return delA * instB;
     }
     else
     {
-      double delA = (double)(numTypeASource) * boxDimRef.volInv[sourceBox] *
-	exp(-BETA * molRef.kinds[kindIndexA].chemPot);
-      double instB = boxDimRef.volume[sourceBox]/ (double)(numTypeBSource + 1) *
-	exp(BETA * molRef.kinds[kindIndexB].chemPot);
+      double delA = exp(-BETA *  molRef.kinds[kindIndexA].chemPot) *
+	numTypeASource;
+      double instB = exp(BETA * molRef.kinds[kindIndexB].chemPot) /
+	(numTypeBSource + 1) ;
       return delA * instB;
     }
   }
@@ -200,18 +203,13 @@ inline double IdentityExchange::GetCoeff() const
   {
     if(ffRef.isFugacity)
     {
-      double instA = boxDimRef.volume[destBox] / (double)(numTypeADest + 1) *
-	(BETA * molRef.kinds[kindIndexA].chemPot);
-      double delB = (double)(numTypeBDest) * boxDimRef.volInv[destBox] /
-	(BETA * molRef.kinds[kindIndexB].chemPot);
-      return instA * delB;
     }
     else
     {
-      double instA = boxDimRef.volume[destBox] / (double)(numTypeADest + 1) *
-	exp(BETA * molRef.kinds[kindIndexA].chemPot);
-      double delB = (double)(numTypeBDest) * boxDimRef.volInv[destBox] *
-	exp(-BETA * molRef.kinds[kindIndexB].chemPot);
+      double instA =  exp(BETA * molRef.kinds[kindIndexA].chemPot)/
+	(numTypeADest + 1);
+      double delB = exp(-BETA * molRef.kinds[kindIndexB].chemPot) *
+	numTypeBDest;
       return instA * delB;
     }
   }
@@ -231,7 +229,7 @@ inline void IdentityExchange::Accept(const uint rejectState, const uint step)
       double WnB = newMolB.GetWeight();
 
       double Wrat = (WnA * WnB) * W_tc * W_recip / (WoA * WoB);
-
+      
       result = prng() < molTransCoeff * Wrat;
       if (result)
       {
