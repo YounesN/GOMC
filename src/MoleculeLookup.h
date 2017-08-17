@@ -86,6 +86,11 @@ public:
     return molLookup[boxAndKindStart[box * numKinds + kind]+subIndex];
   }
 
+  uint GetMolNum(const uint subIndex)
+  {
+    return molLookup[subIndex];
+  }
+
   void TotalAndDensity(uint * numByBox, uint * numByKindBox,
                        double * molFractionByBoxKind,
                        double * densityByKindBox,

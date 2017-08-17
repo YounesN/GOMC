@@ -23,7 +23,8 @@ namespace cbmc
  
       if(oldMol.HasSeed())
       {
-	prng.FillWithRandomOnSphere(positions, nLJTrials, oldMol.GetRmax(), 
+	nLJTrials = 1;
+	prng.FillWithRandomInCavity(positions, nLJTrials, oldMol.GetRmax(), 
 				    oldMol.GetSeed());
 	positions.Set(0, oldMol.AtomPosition(atom));
 	data->axes.WrapPBC(positions, oldMol.GetBox());
@@ -63,7 +64,8 @@ namespace cbmc
  
       if(newMol.HasSeed())
       {
-	prng.FillWithRandomOnSphere(positions, nLJTrials, newMol.GetRmax(), 
+	nLJTrials = 1;
+	prng.FillWithRandomInCavity(positions, nLJTrials, newMol.GetRmax(), 
 				    newMol.GetSeed());
 	data->axes.WrapPBC(positions, newMol.GetBox());
       }

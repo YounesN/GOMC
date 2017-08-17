@@ -31,6 +31,12 @@ struct XYZ
    XYZ& operator*=(const double a)
    { x *= a; y *= a; z *= a; return *this; }
 
+   XYZ& operator-=(const double a)
+   { x -= a; y -= a; z -= a; return *this; }
+
+  XYZ& operator+=(const double a)
+   { x += a; y += a; z += a; return *this; }
+
    XYZ operator+(XYZ const& rhs) const
    { return XYZ(*this) += rhs; }
    XYZ operator-(XYZ const& rhs) const
@@ -43,6 +49,12 @@ struct XYZ
 
    XYZ operator*(const double a) const
    { return XYZ(*this) *= a; }
+
+  XYZ operator-(const double a) const
+   { return XYZ(*this) -= a; }
+
+  XYZ operator+(const double a) const
+   { return XYZ(*this) += a; }
 
    XYZ operator-() const { return XYZ(*this) * -1.0; }
 
@@ -60,7 +72,7 @@ struct XYZ
       *this *= (1 / Length());
       return *this;
    }
-
+   
 };
 
 #endif /*BASIC_TYPES_H*/

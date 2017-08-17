@@ -319,7 +319,44 @@ Virial CalculateEnergy::ForceCalc(const uint box)
    return tempVir;
 }
 
+bool CalculateEnergy::FindMolInCavity(std::vector<uint> &mol, const XYZ& center,
+				      const double rmax, const uint box)
+{
+  //mol.resize(molLookup.GetNumKind());
+  //for(uint i = 0, i < molLookup.GetNumKind(), i++)
+  //  mol[i] = i;
 
+  CellList::Neighbors n = cellList.EnumerateLocal(center, box);
+  while (!n.Done())
+  {
+    //if(currentAxes.InCavity(currentCoords.Get(*n), center, rmax, box))
+    if(currentAxes.InCavity(currentCOM.Get(particleMol[*n]), center, rmax, box))
+    {
+      uint molIndex = particleMol[*n];
+      bool exist = std::find(mol.begin(), mol.end(), molIndex) != mol.end();
+      //uint kind = mols.GetMolKind(molIndex);
+      //mol[kind].push_back(molIndex);
+      if(!exist)
+	mol.push_back(molIndex);
+    }
+
+    n.Next();
+  }
+  
+  //Check to see if there is any molecule in cavity
+  /*
+  for(uint i = 0, i < molLookup.GetNumKind(), i++)
+  {
+    if(mol[i].size() != 0)
+      return true;
+  }
+  return false;
+  */
+  if(mol.size() == 0)
+    return false;
+  else
+    return true;
+}
 
 void CalculateEnergy::MoleculeInter(Intermolecular &inter_LJ,
 				    Intermolecular &inter_coulomb,

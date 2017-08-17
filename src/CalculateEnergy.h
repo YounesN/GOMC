@@ -72,6 +72,10 @@ public:
                               XYZArray const& com,
                               BoxDimensions const& boxAxes) ;
 
+  //Finding the molecule inside cavity and store the molecule Index.
+  bool FindMolInCavity(std::vector<uint> &mol, const XYZ& center,
+		       const double rmax, const uint box);
+  
   //! Calculates intermolecular energy (LJ and coulomb) of a molecule
   //!                           were it at molCoords.
   //! @param potential Copy of current energy structure to append result to

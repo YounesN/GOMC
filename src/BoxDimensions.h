@@ -116,6 +116,9 @@ public:
     return (distSq < rCutSq);
   }
 
+  bool InCavity(XYZ const& arr, XYZ const& center, double const rmax,
+		const uint b) const;
+
   //Dist squared , two different coordinate arrays
   void GetDistSq(double & distSq, XYZArray const& arr1,
                  const uint i, XYZArray const& arr2, const uint j,
@@ -391,6 +394,18 @@ inline bool BoxDimensions::InRcut
   return (rCutSq > distSq);
 }
 
+inline bool BoxDimensions::InCavity(XYZ const& arr, XYZ const& center,
+				    double const rmax, const uint b) const
+{
+  double rmaxSq = rmax * rmax;
+  XYZ dist = MinImage(arr - center, b);
+  XYZ distSq = dist * dist;
+  if(distSq.x > rmaxSq || distSq.y > rmaxSq || distSq.z > rmaxSq)
+    return false;
+  else
+    return true;
+
+}
 
 #endif
 

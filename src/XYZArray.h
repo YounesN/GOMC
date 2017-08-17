@@ -315,6 +315,7 @@ public:
     return Max(box);
   };
 
+
 protected:
   double * x, * y, * z;
   uint count;
@@ -515,6 +516,7 @@ inline void XYZArray::CopyRange(XYZArray & dest, const uint srcIndex,
      memcpy(dest.z+destIndex, z+srcIndex, len * sizeof(double));
   }
 }
+
 
 
 #endif /*XYZ_ARRAY_H*/

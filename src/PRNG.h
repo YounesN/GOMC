@@ -76,6 +76,11 @@ public:
     return 2*bound*gen->rand() - bound;
   }
 
+  double SymExc(double bound)
+  {
+    return 2*gen->rand(bound) - bound;
+  }
+
   /////////////////////////////
   //   GENERATION FUNCTIONS  //
   /////////////////////////////
@@ -94,31 +99,20 @@ public:
       loc.Set(i, randExc(axis.x), randExc(axis.y), randExc(axis.z));
   }
 
+  //Used to pick first position of
+  void FillWithRandomInCavity(XYZArray & loc, const uint len,
+			      const double rmax, XYZ const& center)
+  {
+    for (uint i = 0; i < len; ++i)
+    {
+      loc.Set(i, center.x + SymExc(rmax), center.y + SymExc(rmax), center.z +
+	      SymExc(rmax));
+    }
+  }
+
   void FillWithRandomOnSphere(XYZArray & loc, const uint len,
                               const double rAttach, const XYZ& center)
   {
-    //Quaternion Method - this was 80% slower in my tests - BGJ
-    /*
-    XYZ point;
-    double x[4], sum;
-    for (uint i = 0; i < len; ++i)
-    {
-    do
-     {
-        sum = 0;
-        for (uint j = 0; j < 4; ++j)
-        {
-           x[j]=Sym(1.0);
-           sum += x[j]*x[j];
-        }
-     } while (sum>=1);
-
-     point.x = 2*(x[1]*x[3]+x[0]*x[2])/sum*rAttach;
-     point.y = 2*(x[2]*x[3]-x[0]*x[1])/sum*rAttach;
-     point.z = (x[0]*x[0]+x[3]*x[3]-x[1]*x[1]-x[2]*x[2])/sum*rAttach;
-     loc.Set(i, point + center);
-        }
-        */
     //Pick on cos(phi) - this was faster and always uses 2 rand calls
     for (uint i = 0; i < len; ++i)
     {
@@ -302,9 +296,69 @@ public:
     return rejectState;
   }
 
+  uint PickMolInBox(uint &m, const uint b)
+  {
+    uint rejectState = mv::fail_state::NO_FAIL;
+    //Among the ones of that kind in that dest box, pick one @ random.
+    uint mOff2 = randIntExc(molLookRef.NumInBox(b));
+    //Lookup true index in table.
+    m = molLookRef.GetMolNum(mOff2);
+    return rejectState;
+  }
+
+
+  // used in Identity Exchange move
+  uint PickMol(const uint mk, uint &mk2, uint &m2, const uint b)
+  {
+    uint rejectState = mv::fail_state::NO_FAIL;
+    uint mkTot = molLookRef.GetNumKind();
+    
+    if(mkTot < 2)
+    {
+      std::cout << "Error: ID_Exchange move is not possible for pure system.\n";
+      exit(EXIT_FAILURE);
+    }
+    
+    if(mkTot == 2)
+    {
+      if(mk == 0)
+	mk2 = 1;
+      else
+	mk2 = 0;
+    }
+    else
+    {
+      //find the other ID pair
+      mk2 = mk;
+      while(mk2 == mk)
+      {
+	mk2 = randIntExc(mkTot);
+      }
+    }
+
+    //Pick molecule with the help of molecule lookup table.
+    if (molLookRef.NumKindInBox(mk2, b) == (molLookRef.GetNoSwapInBox(mk2, b) +
+					   molLookRef.GetFixInBox(mk2, b)))
+    {
+      rejectState = mv::fail_state::NO_MOL_OF_KIND_IN_BOX;
+    }
+    else if (molLookRef.NumKindInBox(mk2, b) == 0)
+    {
+      rejectState = mv::fail_state::NO_TWO_MOLECULE_KIND;
+    }
+    else
+    {
+      //Among the ones of that kind in that dest box, pick one @ random.
+      uint mOff2 = randIntExc(molLookRef.NumKindInBox(mk2, b));
+      //Lookup true index in table.
+      m2 = molLookRef.GetMolNum(mOff2, mk2, b);
+    }
+    return rejectState;
+  }
+
    // used in Identity Exchange move
   uint PickMol(uint &m, uint &m2, uint & mk, uint &mk2, const uint b,
-		const uint dest, const double subDraw, const double subPerc)
+	       const uint dest, const double subDraw, const double subPerc)
   {
     uint rejectState = mv::fail_state::NO_FAIL;
     uint mkTot = molLookRef.GetNumKind();

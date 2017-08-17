@@ -46,6 +46,7 @@ void Forcefield::InitBasicVals(config_setup::SystemVals const& val,
   rCutOver2 = rCut / 2.0;
   scl_14 = val.ff.oneFourScale;
   beta = 1/T_in_K;
+  rmax = val.ff.rmax;
 
   vdwKind = val.ff.VDW_KIND;
   exckind = val.exclude.EXCLUDE_KIND;

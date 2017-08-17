@@ -18,7 +18,7 @@ class IdentityExchange : public MoveBase
 
    IdentityExchange(System &sys, StaticVals const& statV) :
     ffRef(statV.forcefield), molLookRef(sys.molLookupRef),
-    MoveBase(sys, statV) {}
+      MoveBase(sys, statV), rmax(statV.forcefield.rmax) {}
 
    virtual uint Prep(const double subDraw, const double movPerc);
    virtual uint Transform();
@@ -34,14 +34,20 @@ class IdentityExchange : public MoveBase
    uint sourceBox, destBox;
    uint pStartA, pStartB, pLenA, pLenB;
    uint molIndexA, molIndexB, kindIndexA, kindIndexB;
-
-   double rmaxA, rmaxB;
+   bool hasMol;
+#if ENSEMBLE == GEMC
+   bool subVSourceBox;
+   uint subVBox;
+#endif
+   double rmax;
+   XYZ center;
    double W_tc, W_recip;
    double correct_oldA, correct_newA, self_oldA, self_newA;
    double correct_oldB, correct_newB, self_oldB, self_newB;
    cbmc::TrialMol oldMolA, oldMolB, newMolA, newMolB;
    Intermolecular tcNew[BOX_TOTAL], recipLoseA, recipGainA;
    Intermolecular recipLoseB, recipGainB;
+   std::vector<uint> molInCav;
    MoleculeLookup & molLookRef;
    Forcefield const& ffRef;
 };
@@ -49,64 +55,212 @@ class IdentityExchange : public MoveBase
 inline uint IdentityExchange::GetBoxPairAndMol
 (const double subDraw, const double movPerc)
 {
-   //Pick two molecule with different ID from two different box
-   uint state = prng.PickMolAndBoxPair(molIndexA, molIndexB, kindIndexA,
-				       kindIndexB, sourceBox, destBox, subDraw,
-				       movPerc);
+   //Set the cavity diameter
+   FindRmax();
+   //Pick box at random
+   uint state;
 
- 
-   if ( state != mv::fail_state::NO_TWO_MOLECULE_KIND)
+#if ENSEMBLE == GEMC
+   double density;
+   double maxDens = 0.0;
+   uint densB;
+   //choose the sourceBox to be the dense phase
+   for(uint b = 0; b < BOX_TOTAL; b++)
    {
-      pStartA = pLenA = pStartB = pLenB = 0;
-      molRef.GetRangeStartLength(pStartA, pLenA, molIndexA);
-      molRef.GetRangeStartLength(pStartB, pLenB, molIndexB);
+     density = 0.0;
+     for(uint k = 0; k < molLookRef.GetNumKind(); k++)
+     {
+       density += molLookRef.NumKindInBox(k, b) * boxDimRef.volInv[b] *
+	 molRef.kinds[k].molMass;
+     }
+
+     if(density > maxDens)
+     {
+       maxDens = density;
+       densB = b;
+     }
    }
+
+   //Pick box at random
+   prng.PickBox(sourceBox, subDraw, movPerc); 
+   //Pick the destination box
+   prng.SetOtherBox(destBox, sourceBox);
+   //pick the box for searching the molecule in cavity
+   prng.PickBox(subVBox, subDraw, movPerc);
+
+   if(subVBox == sourceBox)
+     subVSourceBox = true;
+   else
+     subVSourceBox = false;
+
+   //pick a random location in dense phase
+   XYZ axis = boxDimRef.GetAxis(subVBox);
+   XYZ temp(prng.randExc(axis.x), prng.randExc(axis.y), prng.randExc(axis.z));
+   center = temp;
+
+   //Find the molecule in the cavity
+   molInCav.clear();
+   hasMol = calcEnRef.FindMolInCavity(molInCav, center, rmax, subVBox);
+
+   if(hasMol)
+   {
+     if(subVSourceBox)
+     {
+       //Find a molecule at random
+       uint i = prng.randIntExc(molInCav.size());
+       molIndexA = molInCav[i];
+       kindIndexA = molRef.GetMolKind(molIndexA);
+       //shift the center to COM of MoleculeA
+       center = comCurrRef.Get(molIndexA);
+       //pick a molecule from other kind in less dense phase.
+       state = prng.PickMol(kindIndexA, kindIndexB, molIndexB, destBox);
+     }
+     else
+     {
+       //Find a molecule at random
+       uint i = prng.randIntExc(molInCav.size());
+       molIndexB = molInCav[i];
+       kindIndexB = molRef.GetMolKind(molIndexB);
+       //shift the center to COM of MoleculeB
+       center = comCurrRef.Get(molIndexB);
+       //pick a molecule from other kind in less dense phase.
+       state = prng.PickMol(kindIndexB, kindIndexA, molIndexA, sourceBox);
+     }
+   }
+   else
+   {
+     //reject the move
+     state = mv::fail_state::NO_MOL_OF_KIND_IN_BOX;
+   }
+
+#elif ENSEMBLE == GCMC
+   sourceBox = mv::BOX0;
+   destBox = mv::BOX1;
+
+   //for GCMC pick a random location only in Box0
+   XYZ axis = boxDimRef.GetAxis(sourceBox);
+
+   XYZ temp(prng.randExc(axis.x), prng.randExc(axis.y), prng.randExc(axis.z));
+   center = temp;
+
+   //Find the molecule in the cavity
+   molInCav.clear();
+   hasMol = calcEnRef.FindMolInCavity(molInCav, center, rmax, sourceBox);
+
+   if(hasMol)
+   {
+     //Find a molecule at random
+     uint i = prng.randIntExc(molInCav.size());
+     molIndexA = molInCav[i];
+     kindIndexA = molRef.GetMolKind(molIndexA);
+     //shift the center to COM of MoleculeA
+     center = comCurrRef.Get(molIndexA);
+     //pick a molecule from other kind in resv.
+     state = prng.PickMol(kindIndexA, kindIndexB, molIndexB, destBox);
+   }
+   else
+   {
+     //reject the move
+     state = mv::fail_state::NO_MOL_OF_KIND_IN_BOX;
+   }
+#endif
+   
+   if(state == mv::fail_state::NO_FAIL)
+   {
+     pStartA = pLenA = pStartB = pLenB = 0;
+     molRef.GetRangeStartLength(pStartA, pLenA, molIndexA);
+     molRef.GetRangeStartLength(pStartB, pLenB, molIndexB);
+   }
+
    return state;
 }
 
 inline void IdentityExchange::FindRmax()
 {
-  rmaxA = 1.0;
-  rmaxB = 1.0;
+  //rmax = 2.0;
 }
 
 inline uint IdentityExchange::Prep(const double subDraw, const double movPerc)
 {
    uint state = GetBoxPairAndMol(subDraw, movPerc);
-   //transfering type A from source to dest
-   newMolA = cbmc::TrialMol(molRef.kinds[kindIndexA], boxDimRef, destBox);
-   oldMolA = cbmc::TrialMol(molRef.kinds[kindIndexA], boxDimRef, sourceBox);
-   //transfering type B from dest to source
-   newMolB = cbmc::TrialMol(molRef.kinds[kindIndexB], boxDimRef, sourceBox);
-   oldMolB = cbmc::TrialMol(molRef.kinds[kindIndexB], boxDimRef, destBox);
-   
-   oldMolA.SetCoords(coordCurrRef, pStartA);
-   oldMolB.SetCoords(coordCurrRef, pStartB);
-   //set center of cavity and radius.
-   FindRmax();
-   //pick the first position around COM of other molecule.
-   newMolA.SetSeed(comCurrRef.Get(molIndexB), rmaxB);
-   newMolB.SetSeed(comCurrRef.Get(molIndexA), rmaxA);
-   //pick the first position around COM of itself.
-   oldMolA.SetSeed(comCurrRef.Get(molIndexA), rmaxB);
-   oldMolB.SetSeed(comCurrRef.Get(molIndexB), rmaxA);
-   W_tc = 1.0;
+   if(state == mv::fail_state::NO_FAIL)
+   {
+     //transfering type A from source to dest
+     newMolA = cbmc::TrialMol(molRef.kinds[kindIndexA], boxDimRef, destBox);
+     oldMolA = cbmc::TrialMol(molRef.kinds[kindIndexA], boxDimRef, sourceBox);
+     //transfering type B from dest to source
+     newMolB = cbmc::TrialMol(molRef.kinds[kindIndexB], boxDimRef, sourceBox);
+     oldMolB = cbmc::TrialMol(molRef.kinds[kindIndexB], boxDimRef, destBox);
+     //set the old coordinate
+     oldMolA.SetCoords(coordCurrRef, pStartA);
+     oldMolB.SetCoords(coordCurrRef, pStartB);
+
+#if ENSEMBLE == GEMC
+     XYZ axisD = boxDimRef.GetAxis(destBox);        
+     XYZ axisS = boxDimRef.GetAxis(sourceBox);     
+
+     if(subVSourceBox)
+     {
+       //Pick moleculeA from the cavity in sourceBox and insert it to destBox
+       //Pick moleculeB from destBox and insert it in the cavity in sourceBox
+
+       //Insert B in the cavity in sourceBox
+       newMolB.SetSeed(center, rmax);
+       //Remove A from the cavity in sourceBox
+       oldMolA.SetSeed(center, rmax);
+       //perform trial for oldMolB in random cavity in destBox
+       XYZ tempD(prng.randExc(axisD.x), prng.randExc(axisD.y),
+		 prng.randExc(axisD.z));
+       oldMolB.SetSeed(tempD, rmax);
+       //perform trial for newMolA in random cavity in destBox
+       XYZ tempDD(prng.randExc(axisD.x), prng.randExc(axisD.y),
+		 prng.randExc(axisD.z));
+       newMolA.SetSeed(tempDD, rmax);
+     }
+     else
+     {
+       //Pick moleculeB from the cavity in destBox and insert it to sourceBox
+       //Pick moleculeA from sourceBox and insert it in the cavity in destBox
+
+       //Insert A in the cavity in destBox
+       newMolA.SetSeed(center, rmax);
+       //Remove B from the cavity in destBox
+       oldMolB.SetSeed(center, rmax);
+       //perform trial for oldMolA in random cavity in sourceBox
+       XYZ tempS(prng.randExc(axisS.x), prng.randExc(axisS.y),
+		 prng.randExc(axisS.z));
+       oldMolA.SetSeed(tempS, rmax);
+       //perform trial for newMolB in random cavity in sourceBox
+       XYZ tempSS(prng.randExc(axisS.x), prng.randExc(axisS.y),
+	     prng.randExc(axisS.z));
+       newMolB.SetSeed(tempSS, rmax);
+     }
+#elif ENSEMBLE == GCMC
+     //insert B from resv to the cavity
+     newMolB.SetSeed(center, rmax);
+     //IMPORTAMT: When removing A, we have to do same number of trial inside 
+     //the cavity for oldBox. Otherwise, results will be wrong  
+     oldMolA.SetSeed(center, rmax);
+     //Since We dont Calculate energy in resv, we dont care about oldMolB and
+     //newMolA.
+#endif
+   }
+
    return state;
 }
 
 
 inline uint IdentityExchange::Transform()
 {
-   //Deleting Molecule from cellList to avoid overlaping
-   cellList.RemoveMol(molIndexA, sourceBox, coordCurrRef);
-   cellList.RemoveMol(molIndexB, destBox, coordCurrRef);
-
-   //Transfer Type A to dest Box
-   molRef.kinds[kindIndexA].Build(oldMolA, newMolA, molIndexA);
-   //Transfer Type B to source Box
-   molRef.kinds[kindIndexB].Build(oldMolB, newMolB, molIndexB);
-
-   return mv::fail_state::NO_FAIL;
+  //Deleting Molecule from cellList to avoid overlaping
+  cellList.RemoveMol(molIndexA, sourceBox, coordCurrRef);
+  cellList.RemoveMol(molIndexB, destBox, coordCurrRef);
+  //Transfer Type A to resv
+  molRef.kinds[kindIndexA].Build(oldMolA, newMolA, molIndexA);
+  //Transfer Type B to box0
+  molRef.kinds[kindIndexB].Build(oldMolB, newMolB, molIndexB);
+     
+  return mv::fail_state::NO_FAIL;
 }
 
 inline void IdentityExchange::CalcEn()
@@ -127,10 +281,11 @@ inline void IdentityExchange::CalcEn()
 	 {
 	    kCount[k] = molLookRef.NumKindInBox(k, b);
 	 }
+
 	 if (b == sourceBox)
 	 {
 	   --kCount[kindIndexA];
-	   ++kCount[kindIndexB];
+	   ++kCount[kindIndexB];	   
 	 }
 	 else if (b == destBox)
 	 {
@@ -142,7 +297,7 @@ inline void IdentityExchange::CalcEn()
       }
      W_tc = exp(-1.0 * ffRef.beta * delTC); 
    }
-
+   
    if (newMolA.GetWeight() != 0.0 && newMolB.GetWeight() != 0.0)
    {
       correct_newA = calcEwald->SwapCorrection(newMolA);
@@ -172,7 +327,6 @@ inline void IdentityExchange::CalcEn()
 					 self_newA - self_oldA +
 					 self_newB - self_oldB));
    }
-
 }
 
 inline double IdentityExchange::GetCoeff() const
@@ -182,36 +336,25 @@ inline double IdentityExchange::GetCoeff() const
   double numTypeBSource = molLookRef.NumKindInBox(kindIndexB, sourceBox);
   double numTypeBDest = molLookRef.NumKindInBox(kindIndexB, destBox);
 #if ENSEMBLE == GEMC
-  return numTypeBDest * numTypeASource /
-    ((numTypeBSource + 1.0) * (numTypeADest + 1.0));
+  
+  if(subVSourceBox)
+    return numTypeBDest / (numTypeADest + 1);
+  else
+    return numTypeASource / (numTypeBSource + 1);
+  
+
 #elif ENSEMBLE == GCMC
-  if (sourceBox == mv::BOX0) //Removing A from Box 0
+  if(ffRef.isFugacity)
   {
-    if(ffRef.isFugacity)
-    {
-    }
-    else
-    {
-      double delA = exp(-BETA *  molRef.kinds[kindIndexA].chemPot) *
-	numTypeASource;
-      double instB = exp(BETA * molRef.kinds[kindIndexB].chemPot) /
-	(numTypeBSource + 1) ;
-      return delA * instB;
-    }
+    double delA = BETA * molRef.kinds[kindIndexA].chemPot;
+    double insB = BETA * molRef.kinds[kindIndexB].chemPot;
+    return insB / delA;
   }
-  else //Insert A to Box 0
+  else
   {
-    if(ffRef.isFugacity)
-    {
-    }
-    else
-    {
-      double instA =  exp(BETA * molRef.kinds[kindIndexA].chemPot)/
-	(numTypeADest + 1);
-      double delB = exp(-BETA * molRef.kinds[kindIndexB].chemPot) *
-	numTypeBDest;
-      return instA * delB;
-    }
+    double delA = exp(-BETA * molRef.kinds[kindIndexA].chemPot);
+    double insB = exp(BETA * molRef.kinds[kindIndexB].chemPot);
+    return insB * delA;
   }
 #endif
 }
@@ -227,21 +370,24 @@ inline void IdentityExchange::Accept(const uint rejectState, const uint step)
       double WoB = oldMolB.GetWeight();
       double WnA = newMolA.GetWeight();
       double WnB = newMolB.GetWeight();
-
+     
       double Wrat = (WnA * WnB) * W_tc * W_recip / (WoA * WoB);
-      
+      //std::cout << "Wrat: " << Wrat << std::endl;
       result = prng() < molTransCoeff * Wrat;
-      if (result)
+     
+      if(result)
       {
          //Add tail corrections
          sysPotRef.boxEnergy[sourceBox].tc = tcNew[sourceBox].energy;
          sysPotRef.boxEnergy[destBox].tc = tcNew[destBox].energy;
 
          //Add rest of energy.
-         sysPotRef.boxEnergy[sourceBox] -= oldMolA.GetEnergy();
-         sysPotRef.boxEnergy[sourceBox] += newMolB.GetEnergy();
-         sysPotRef.boxEnergy[destBox] += newMolA.GetEnergy();
-         sysPotRef.boxEnergy[destBox] -= oldMolB.GetEnergy();
+	 sysPotRef.boxEnergy[sourceBox] += newMolB.GetEnergy();
+	 sysPotRef.boxEnergy[sourceBox] -= oldMolA.GetEnergy();
+	 sysPotRef.boxEnergy[destBox] -= oldMolB.GetEnergy();
+	 sysPotRef.boxEnergy[destBox] += newMolA.GetEnergy();
+	 
+
 	 //Add Reciprocal energy
 	 sysPotRef.boxEnergy[sourceBox].recip += recipLoseA.energy;
 	 sysPotRef.boxEnergy[sourceBox].recip += recipGainB.energy;
@@ -264,35 +410,36 @@ inline void IdentityExchange::Accept(const uint rejectState, const uint step)
 	 }
 
 	 //Add type A to dest box
-         newMolA.GetCoords().CopyRange(coordCurrRef, 0, pStartA, pLenA);
-         comCurrRef.SetNew(molIndexA, destBox);
-         molLookRef.ShiftMolBox(molIndexA, sourceBox, destBox, kindIndexA);
+	 newMolA.GetCoords().CopyRange(coordCurrRef, 0, pStartA, pLenA);
+	 comCurrRef.SetNew(molIndexA, destBox);
+	 molLookRef.ShiftMolBox(molIndexA, sourceBox, destBox, kindIndexA);
 	 //Add type B to source box
-         newMolB.GetCoords().CopyRange(coordCurrRef, 0, pStartB, pLenB);
-         comCurrRef.SetNew(molIndexB, sourceBox);
-         molLookRef.ShiftMolBox(molIndexB, destBox, sourceBox, kindIndexB);
-
+	 newMolB.GetCoords().CopyRange(coordCurrRef, 0, pStartB, pLenB);
+	 comCurrRef.SetNew(molIndexB, sourceBox);
+	 molLookRef.ShiftMolBox(molIndexB, destBox, sourceBox, kindIndexB);
+	   
 	 cellList.AddMol(molIndexA, destBox, coordCurrRef);
 	 cellList.AddMol(molIndexB, sourceBox, coordCurrRef);
 
 	 //Retotal
          sysPotRef.Total();
-
       }
       else
       {
-	cellList.AddMol(molIndexA, sourceBox, coordCurrRef);
+        cellList.AddMol(molIndexA, sourceBox, coordCurrRef);
 	cellList.AddMol(molIndexB, destBox, coordCurrRef);
+	  
 	//when weight is 0, MolDestSwap() will not be executed, thus cos/sin
-	 //molRef will not be changed. Also since no memcpy, doing restore
-	 //results in memory overwrite
-	 if (newMolA.GetWeight() != 0.0 && newMolB.GetWeight() != 0.0)
-	   calcEwald->RestoreMol(molIndexA);
-	 //Need the way to handle the reciprocal issue for cache version
+	//molRef will not be changed. Also since no memcpy, doing restore
+	//results in memory overwrite
+	if (newMolA.GetWeight() != 0.0 && newMolB.GetWeight() != 0.0)
+	  calcEwald->RestoreMol(molIndexA);
+	//Need the way to handle the reciprocal issue for cache version
       }
    }
    else  //else we didn't even try because we knew it would fail
       result = false;
+
 #if ENSEMBLE == GEMC
    subPick = mv::GetMoveSubIndex(mv::ID_EXCHANGE, sourceBox);
 #elif ENSEMBLE == GCMC

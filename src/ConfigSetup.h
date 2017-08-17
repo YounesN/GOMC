@@ -111,13 +111,13 @@ namespace config_setup
    //Items that effect the system interactions and/or identity, e.g. Temp. 
    struct FFValues 
    { 
-      uint VDW_KIND; 
-      double cutoff, cutoffLow, rswitch, oneFourScale; 
-      bool doTailCorr; 
-      std::string kind; 
- 
-      static const std::string VDW, VDW_SHIFT, VDW_SWITCH; 
-      static const uint VDW_STD_KIND, VDW_SHIFT_KIND, VDW_SWITCH_KIND; 
+     uint VDW_KIND; 
+     double cutoff, cutoffLow, rswitch, oneFourScale, rmax; 
+     bool doTailCorr; 
+     std::string kind; 
+     
+     static const std::string VDW, VDW_SHIFT, VDW_SWITCH; 
+     static const uint VDW_STD_KIND, VDW_SHIFT_KIND, VDW_SWITCH_KIND; 
    }; 
  
 #if ENSEMBLE == GEMC || ENSEMBLE == NPT

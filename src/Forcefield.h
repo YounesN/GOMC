@@ -46,7 +46,7 @@ public:
 
   double rOn;                // for switch tup of LJ (angstroms)
   double ronSq;              // for switch tup of LJ (a^2)
-
+  double rmax;               //cavity radius
   //XXX 1-4 pairs are not yet implemented
   double scl_14;           //!<Scaling factor for 1-4 pairs' ewald interactions
   double beta;             //!<Thermodynamic beta = 1/(T) K^-1)
