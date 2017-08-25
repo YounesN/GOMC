@@ -29,6 +29,7 @@ namespace cbmc
          const MoleculeKind& kind, const Setup& set);
 
       void Build(TrialMol& oldMol, TrialMol& newMol, uint molIndex);
+      void BuildID(TrialMol& oldMol, TrialMol& newMol, uint molIndex);
       ~DCGraph();
 
    private:
@@ -40,9 +41,11 @@ namespace cbmc
       };
       struct Node
       {
-         DCComponent* starting;
+	DCComponent *starting;
          std::vector<Edge> edges;
       };
+      
+      DCComponent *idExchange;
 
       DCData data;
       std::vector<Node> nodes;

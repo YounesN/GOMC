@@ -62,6 +62,8 @@ void swap(TrialMol& a, TrialMol& b)
   swap(a.atomBuilt, b.atomBuilt);
   swap(a.growthToWorld, b.growthToWorld);
   swap(a.worldToGrowth, b.worldToGrowth);
+  a.seedToGrow = false;
+  b.seedToGrow = false;
 }
 
 TrialMol::~TrialMol()
@@ -75,6 +77,10 @@ void TrialMol::AddAtom(const uint index, const XYZ& loc)
   atomBuilt[index] = true;
 }
 
+void TrialMol::SetAtomCoords(const uint index, const XYZ& loc)
+{
+  tCoords.Set(index, loc);
+}
 
 void TrialMol::ConfirmOldAtom(uint i)
 {
@@ -179,6 +185,11 @@ void TrialMol::ShiftBasis(const uint p1)
   basisPoint = tCoords.Get(p1);
 }
 
+void TrialMol::ShiftBasis(const XYZ cent)
+{
+  basisPoint = cent;
+}
+
 void TrialMol::ResetBasis()
 {
   growthToWorld.LoadIdentity();
@@ -205,6 +216,23 @@ void TrialMol::SetSeed(const XYZ& coords, const double rmax)
   sCoords = coords;
   sRmax = rmax;
   seedToGrow = true;
+}
+
+XYZ TrialMol::GetCOM()
+{
+  XYZ tcom;
+  XYZArray temp(tCoords);
+  //axes->UnwrapPBC(temp, box, tCoords.Get(0));
+  tCoords = temp;
+
+  for(uint p = 0; p < tCoords.Count(); p++)
+  {
+    tcom += tCoords.Get(p);
+  }
+
+  tcom *= (1.0 / tCoords.Count());
+ 
+  return tcom;
 }
 
 double TrialMol::AngleDist(const double b1, const double b2, const double theta)

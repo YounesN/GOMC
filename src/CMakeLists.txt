@@ -46,6 +46,7 @@ set(sources
    cbmc/DCLinkNoDih.cpp
    cbmc/DCOnSphere.cpp
    cbmc/DCSingle.cpp
+   cbmc/DCRotateCOM.cpp
    cbmc/TrialMol.cpp)
 
 set(headers
@@ -127,6 +128,7 @@ set(headers
    cbmc/DCLinkNoDih.h
    cbmc/DCOnSphere.h
    cbmc/DCSingle.h
+   cbmc/DCRotateCOM.h
    cbmc/TrialMol.h)
 
 set(libHeaders

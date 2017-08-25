@@ -23,7 +23,7 @@ namespace cbmc
  
       if(oldMol.HasSeed())
       {
-	nLJTrials = 1;
+	//nLJTrials = 1;
 	prng.FillWithRandomInCavity(positions, nLJTrials, oldMol.GetRmax(), 
 				    oldMol.GetSeed());
 	positions.Set(0, oldMol.AtomPosition(atom));
@@ -64,7 +64,7 @@ namespace cbmc
  
       if(newMol.HasSeed())
       {
-	nLJTrials = 1;
+	//nLJTrials = 1;
 	prng.FillWithRandomInCavity(positions, nLJTrials, newMol.GetRmax(), 
 				    newMol.GetSeed());
 	data->axes.WrapPBC(positions, newMol.GetBox());

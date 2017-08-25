@@ -1,6 +1,7 @@
 #include "DCGraph.h"
 #include "DCFreeHedron.h"
 #include "DCLinkedHedron.h"
+#include "DCRotateCOM.h"
 #include "MolSetup.h"
 #include "Setup.h"
 #include "MoleculeKind.h"
@@ -17,6 +18,8 @@ DCGraph::DCGraph(System& sys, const Forcefield& ff,
   MolMap::const_iterator it = set.mol.kindMap.find(kind.name);
   assert(it != set.mol.kindMap.end());
   const MolKind setupKind = it->second;
+
+  idExchange = new DCRotateCOM(&data);
 
   std::vector<uint> atomToNode(setupKind.atoms.size(), 0);
   std::vector<uint> bondCount(setupKind.atoms.size(), 0);
@@ -102,6 +105,15 @@ void DCGraph::Build(TrialMol& oldMol, TrialMol& newMol, uint molIndex)
   }
 }
 
+void DCGraph::BuildID(TrialMol& oldMol, TrialMol& newMol, uint molIndex)
+{
+  idExchange->PrepareNew(newMol, molIndex);
+  idExchange->BuildNew(newMol, molIndex);
+
+  idExchange->PrepareOld(oldMol, molIndex);
+  idExchange->BuildOld(oldMol, molIndex);
+}
+
 DCGraph::~DCGraph()
 {
   for(uint v = 0; v < nodes.size(); ++v)
@@ -113,6 +125,8 @@ DCGraph::~DCGraph()
       delete node.edges[e].component;
     }
   }
+
+  delete idExchange;
 }
 
 }

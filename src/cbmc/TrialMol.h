@@ -38,6 +38,8 @@ class TrialMol
 
       void AddAtom(uint index, const XYZ& position);
 
+      void SetAtomCoords(const uint index, const XYZ& loc);
+
       void AddEnergy(const Energy& energy) { en += energy; }
 
       //!Confirms that atom at index i has been built (used for oldMols)
@@ -58,6 +60,9 @@ class TrialMol
 
       //!Shifts the current basis to the position of p1, but does not rotate it.
       void ShiftBasis(uint p1);
+
+      //!Shifts the current basis to the XYZ coordinate.
+      void ShiftBasis(XYZ cent);
 
       //!Resets basis to box coordinate system
       void ResetBasis();
@@ -120,6 +125,8 @@ class TrialMol
       bool HasSeed() const {return seedToGrow;}
       XYZ GetSeed() const {return sCoords;}
       double GetRmax() const {return sRmax;}
+      //return unwrap com of tcoords so tcoords need to be set
+      XYZ GetCOM();
 
       ~TrialMol();
 

@@ -26,6 +26,10 @@ public:
   //will be modified to contain the energies of the old and new sites
   virtual void Build(TrialMol& oldMol, TrialMol& newMol, uint molIndex) = 0;
 
+  //Rotate a new molecule using a CBMC algorithm, oldMol and newMol
+  //will be modified to contain the energies of the old and new sites
+  virtual void BuildID(TrialMol& oldMol, TrialMol& newMol, uint molIndex) = 0;
+
   virtual ~CBMC() {}
 };
 

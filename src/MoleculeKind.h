@@ -58,6 +58,11 @@ class MoleculeKind
 	      const uint molIndex)
    { builder->Build(oldMol, newMol, molIndex); }
 
+   //Invoke CBMC, oldMol and newMol will be modified
+   void BuildID(cbmc::TrialMol& oldMol, cbmc::TrialMol& newMol,
+		const uint molIndex)
+   { builder->BuildID(oldMol, newMol, molIndex); }
+
    
    double PrintChargeInfo();
    SortedNonbond sortedNB, sortedNB_1_4, sortedNB_1_3, sortedEwaldNB;

@@ -4,6 +4,7 @@
 #include "DCOnSphere.h"
 #include "DCLink.h"
 #include "DCLinkNoDih.h"
+#include "DCRotateCOM.h"
 
 using namespace cbmc;
 
@@ -16,6 +17,8 @@ DCLinear::DCLinear(System& sys, const Forcefield& ff,
   const mol_setup::MolKind setupKind = it->second;
   //assuming the molecule's ends are 0 and Length - 1
   uint size = kind.NumAtoms();
+  
+  idExchange = new DCRotateCOM(&data);
 
   forward.push_back(new DCSingle(&data, 0));
   backward.push_back(new DCSingle(&data, size - 1));
@@ -42,6 +45,7 @@ DCLinear::~DCLinear()
     delete forward[i];
     delete backward[i];
   }
+  delete idExchange;
 }
 
 void DCLinear::Build(TrialMol& oldMol, TrialMol& newMol, uint molIndex)
@@ -58,4 +62,13 @@ void DCLinear::Build(TrialMol& oldMol, TrialMol& newMol, uint molIndex)
     comps[i]->PrepareOld(oldMol, molIndex);
     comps[i]->BuildOld(oldMol, molIndex);
   }
+}
+
+void DCLinear::BuildID(TrialMol& oldMol, TrialMol& newMol, uint molIndex)
+{
+  idExchange->PrepareNew(newMol, molIndex);
+  idExchange->BuildNew(newMol, molIndex);
+
+  idExchange->PrepareOld(oldMol, molIndex);
+  idExchange->BuildOld(oldMol, molIndex);
 }

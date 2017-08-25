@@ -111,7 +111,7 @@ inline uint IdentityExchange::GetBoxPairAndMol
        molIndexA = molInCav[i];
        kindIndexA = molRef.GetMolKind(molIndexA);
        //shift the center to COM of MoleculeA
-       center = comCurrRef.Get(molIndexA);
+       //center = comCurrRef.Get(molIndexA);
        //pick a molecule from other kind in less dense phase.
        state = prng.PickMol(kindIndexA, kindIndexB, molIndexB, destBox);
      }
@@ -122,7 +122,7 @@ inline uint IdentityExchange::GetBoxPairAndMol
        molIndexB = molInCav[i];
        kindIndexB = molRef.GetMolKind(molIndexB);
        //shift the center to COM of MoleculeB
-       center = comCurrRef.Get(molIndexB);
+       //center = comCurrRef.Get(molIndexB);
        //pick a molecule from other kind in less dense phase.
        state = prng.PickMol(kindIndexB, kindIndexA, molIndexA, sourceBox);
      }
@@ -154,7 +154,7 @@ inline uint IdentityExchange::GetBoxPairAndMol
      molIndexA = molInCav[i];
      kindIndexA = molRef.GetMolKind(molIndexA);
      //shift the center to COM of MoleculeA
-     center = comCurrRef.Get(molIndexA);
+     //center = comCurrRef.Get(molIndexA);
      //pick a molecule from other kind in resv.
      state = prng.PickMol(kindIndexA, kindIndexB, molIndexB, destBox);
    }
@@ -192,57 +192,80 @@ inline uint IdentityExchange::Prep(const double subDraw, const double movPerc)
      newMolB = cbmc::TrialMol(molRef.kinds[kindIndexB], boxDimRef, sourceBox);
      oldMolB = cbmc::TrialMol(molRef.kinds[kindIndexB], boxDimRef, destBox);
      //set the old coordinate
-     oldMolA.SetCoords(coordCurrRef, pStartA);
-     oldMolB.SetCoords(coordCurrRef, pStartB);
+     XYZArray molA(pLenA);
+     XYZArray molB(pLenB);
+     coordCurrRef.CopyRange(molA, pStartA, 0, pLenA);
+     coordCurrRef.CopyRange(molB, pStartB, 0, pLenB);
+     boxDimRef.UnwrapPBC(molA, sourceBox, comCurrRef.Get(molIndexA));
+     boxDimRef.UnwrapPBC(molB, destBox, comCurrRef.Get(molIndexB));
+     oldMolA.SetCoords(molA, 0);
+     oldMolB.SetCoords(molB, 0);
 
-#if ENSEMBLE == GEMC
      XYZ axisD = boxDimRef.GetAxis(destBox);        
-     XYZ axisS = boxDimRef.GetAxis(sourceBox);     
+     XYZ axisS = boxDimRef.GetAxis(sourceBox);
+
+#if ENSEMBLE == GEMC     
 
      if(subVSourceBox)
      {
        //Pick moleculeA from the cavity in sourceBox and insert it to destBox
        //Pick moleculeB from destBox and insert it in the cavity in sourceBox
+      
+       //set coordinate of old B to newMolB
+       newMolB.SetCoords(molB, 0);
+       //rotate COM of MolB around center
+       newMolB.SetSeed(center, rmax);   
+       //use the COM of oldB to rotate around
+       oldMolB.SetSeed(comCurrRef.Get(molIndexB), rmax);
 
-       //Insert B in the cavity in sourceBox
-       newMolB.SetSeed(center, rmax);
-       //Remove A from the cavity in sourceBox
-       oldMolA.SetSeed(center, rmax);
-       //perform trial for oldMolB in random cavity in destBox
+       //set coordinate of oldA to newMolA
+       newMolA.SetCoords(molA, 0);
        XYZ tempD(prng.randExc(axisD.x), prng.randExc(axisD.y),
 		 prng.randExc(axisD.z));
-       oldMolB.SetSeed(tempD, rmax);
-       //perform trial for newMolA in random cavity in destBox
-       XYZ tempDD(prng.randExc(axisD.x), prng.randExc(axisD.y),
-		 prng.randExc(axisD.z));
-       newMolA.SetSeed(tempDD, rmax);
+       //randomly pick a locatoin in destBox to rotate A around that
+       newMolA.SetSeed(tempD, rmax);
+       //use the COM of oldA to rotate around
+       oldMolA.SetSeed(comCurrRef.Get(molIndexA), rmax);
      }
      else
      {
        //Pick moleculeB from the cavity in destBox and insert it to sourceBox
        //Pick moleculeA from sourceBox and insert it in the cavity in destBox
 
-       //Insert A in the cavity in destBox
-       newMolA.SetSeed(center, rmax);
-       //Remove B from the cavity in destBox
-       oldMolB.SetSeed(center, rmax);
-       //perform trial for oldMolA in random cavity in sourceBox
+       //set coordinate of old A to newMolA
+       newMolA.SetCoords(molA, 0);
+       //rotate COM of MolA around center
+       newMolA.SetSeed(center, rmax);   
+       //use the COM of oldA to rotate around
+       oldMolA.SetSeed(comCurrRef.Get(molIndexA), rmax);
+
+       //set coordinate of oldB to newMolB
+       newMolB.SetCoords(molB, 0);
        XYZ tempS(prng.randExc(axisS.x), prng.randExc(axisS.y),
 		 prng.randExc(axisS.z));
-       oldMolA.SetSeed(tempS, rmax);
-       //perform trial for newMolB in random cavity in sourceBox
-       XYZ tempSS(prng.randExc(axisS.x), prng.randExc(axisS.y),
-	     prng.randExc(axisS.z));
-       newMolB.SetSeed(tempSS, rmax);
+       //randomly pick a locatoin in source to rotate B around that
+       newMolB.SetSeed(tempS, rmax);
+       //use the COM of oldB to rotate around
+       oldMolB.SetSeed(comCurrRef.Get(molIndexB), rmax);
      }
-#elif ENSEMBLE == GCMC
-     //insert B from resv to the cavity
-     newMolB.SetSeed(center, rmax);
-     //IMPORTAMT: When removing A, we have to do same number of trial inside 
-     //the cavity for oldBox. Otherwise, results will be wrong  
-     oldMolA.SetSeed(center, rmax);
-     //Since We dont Calculate energy in resv, we dont care about oldMolB and
-     //newMolA.
+#elif ENSEMBLE == GCMC 
+     //Inserting molB from Resv to sourceBox
+     //set coordinate of old B to newMolB
+     newMolB.SetCoords(molB, 0);
+     //rotate COM of MolB around center
+     newMolB.SetSeed(center, rmax);   
+     //use the COM of oldB to rotate around
+     oldMolB.SetSeed(comCurrRef.Get(molIndexB), rmax);
+     
+     ////Inserting molA from sourceBox to Resv
+     //set coordinate of oldA to newMolA
+     newMolA.SetCoords(molA, 0);
+     XYZ tempD(prng.randExc(axisD.x), prng.randExc(axisD.y),
+		prng.randExc(axisD.z));
+     //randomly pick a locatoin in destBox to rotate A around that
+     newMolA.SetSeed(tempD, rmax);
+     //use the COM of oldA to rotate around
+     oldMolA.SetSeed(comCurrRef.Get(molIndexA), rmax);
 #endif
    }
 
@@ -256,9 +279,9 @@ inline uint IdentityExchange::Transform()
   cellList.RemoveMol(molIndexA, sourceBox, coordCurrRef);
   cellList.RemoveMol(molIndexB, destBox, coordCurrRef);
   //Transfer Type A to resv
-  molRef.kinds[kindIndexA].Build(oldMolA, newMolA, molIndexA);
+  molRef.kinds[kindIndexA].BuildID(oldMolA, newMolA, molIndexA);
   //Transfer Type B to box0
-  molRef.kinds[kindIndexB].Build(oldMolB, newMolB, molIndexB);
+  molRef.kinds[kindIndexB].BuildID(oldMolB, newMolB, molIndexB);
      
   return mv::fail_state::NO_FAIL;
 }
